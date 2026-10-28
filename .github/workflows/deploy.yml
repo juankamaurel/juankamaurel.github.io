@@ -1,52 +1,58 @@
-name: Build, deploy, release by version
-# main に push: Astro を build して GitHub Pages に出す。VERSION の名前(v0.1.0)のタグが無ければ タグ + Release も作る。
+name: Publish to Pages
 on:
   push:
-    branches: [main]
+    branches: ["main"]
   workflow_dispatch:
-    inputs:
-      mode:
-        description: "site = 本物のサイト / holding = 準備中の1枚"
-        type: choice
-        options: [site, holding]
-        default: site
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
-concurrency: { group: pages, cancel-in-progress: false }
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm }
-      - run: npm ci
-      - run: |
-          V="$(tr -d ' \n' < VERSION)"; test -n "$V"
-          P="$(node -p "require('./package.json').version")"
-          test "$V" = "$P" || { echo "VERSION ($V) と package.json ($P) が違います"; exit 1; }
-          echo "version=$V" >> "$GITHUB_OUTPUT"
-        id: ver
-      - run: npm run build
-      - if: github.event.inputs.mode == 'holding'
-        run: rm -rf dist && cp -r holding dist
-      - uses: actions/upload-pages-artifact@v3
-        with: { path: dist }
-      - name: tag + release
-        if: github.event.inputs.mode != 'holding'
-        env: { GH_TOKEN: "${{ github.token }}", V: "${{ steps.ver.outputs.version }}" }
+      - uses: actions/configure-pages@v5
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./
+          destination: ./_site
+      - name: Apply
+        env:
+          A1C672: ${{ secrets.A1C672 }}
+          B1B167: ${{ secrets.B1B167 }}
         run: |
-          if git ls-remote --exit-code --tags origin "refs/tags/v$V" >/dev/null 2>&1; then echo "v$V はもうある"; exit 0; fi
-          git config user.name "github-actions[bot]"; git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v$V"; git push origin "v$V"
-          gh release create "v$V" --title "ぷちたち(サイト)v$V" --notes "https://petitones.github.io/ の版 v$V。"
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment: { name: github-pages, url: "${{ steps.d.outputs.page_url }}" }
-    steps:
-      - id: d
+          sudo chown -R "$(id -u):$(id -g)" _site
+          python3 -c "
+          import os, sys, pathlib
+          tag_a = os.environ.get('A1C672', '')
+          tag_b = os.environ.get('B1B167', '')
+          n = 0
+          for fpath in pathlib.Path('_site').rglob('*.html'):
+              try:
+                  orig = fpath.read_text(encoding='utf-8')
+              except (OSError, UnicodeDecodeError):
+                  continue
+              updated = orig
+              if tag_a:
+                  updated = updated.replace('<!-- e51f7bee3a4965ccd429cd8d -->', tag_a)
+              if tag_b:
+                  updated = updated.replace('<!-- f2cebcdf307843d923 -->', tag_b)
+              if updated != orig:
+                  fpath.write_text(updated, encoding='utf-8')
+                  n += 1
+          if n == 0 and (tag_a or tag_b):
+              sys.exit(1)
+          "
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
         uses: actions/deploy-pages@v4
